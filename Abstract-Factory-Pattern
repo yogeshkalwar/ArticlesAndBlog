@@ -1,0 +1,140 @@
+
+A good developer needs to learn following things –
+1) SOLID
+2) Abstract factory pattern
+3) Factory method
+4) Singleton pattern
+5) Builder pattern
+6) Observer pattern
+7) Template pattern
+
+Abstract Factory method – (Families of Objects) 
+https://yogeshkalwar.wordpress.com/2019/10/28/beginners-guide-some-design-patterns-which-are-must-for-developers/
+
+When to use? – “When you have families of objects to create for certain variants”
+
+Like ? – 1) Chair, Table, Sofa for – Modern, Victorian, Artistic style [here Chair, Table, Sofa are families of object where as Modern, Victorian are variants]
+2) Textbox, Button, Label for – Mac, Windows, Linux [here Textbox, Button are families of objects where as Mac, Windows are variants]
+
+How? – Two things,
+1) Separate interface for family of objects like Chair, Table, Sofa, Textbox, Button, Label
+2) Separate interface for creating these objects – Factory class
+
+Confused? Ok- So remember you are not going to create these objects directly, someone else will do. Who? Factory class. Factory class will take care the variant, flavour and other environment specific changes and will give you your objects.
+
+OK, if Factory class will gives the objects then why the name is abstract factory?
+Good observation. Factory class is actually abstract class which has contract to provide the objects but it does not has the implementation. So all derived class has to implement that.
+
+Like? –
+Your ModernFactory class will implement to create the objects of ModernChair, ModernSofa, ModernTable.
+Your VictorianFactory class will implement to create the objects of VictorianChair, VictorianSofa and VictorianTable.
+Your MacToolkitFactory class will implement to create the objects of MacTextView, MacButton.
+Your WindowsToolkitFactory class will implement to create the objects of WinTextView, WinButton so forth so on.
+
+Hmm, quiet interesting but lots of confusion.
+Ok, here are details in depth.
+There are 3 parts in approach.
+1) Client – which will use your objects like, Chair, Sofa, Textview, Button.
+2) Objects – classes for objects like ModernChair, VictorianSofa, MacTextview, WinButton etc.
+3) Factories – classes which will provides variant objects to the client, eg VictorianFactory, MacToolkitFactory etc.
+
+
+Rule – “Client will never creates the Object, it only knows their interfaces. It will use Factories to create the objects.“
+
+Practical codes are best to learn? Ok let’s write code for toolkit then –
+
+1) Controls:
+a) Interfaces for clients –
+interface TextView {
+void setText(String text);
+}
+interface Button {
+void setText(String text);
+}
+b) Concrete variants for Mac and Windows
+class MacTextView implements TextView, MacLookAndFeel {
+… implements setText() and mac look and feel
+}
+class MacButton implements Button, MacLookAndFeel {
+… implements setText() and mac look and feel
+}
+class WinTextView implements TextView, WinLookAndFeel {
+… implements setText() and windows look and feel
+}
+class WinButton implements Button, WinLookAndFeel {
+… implements setText() and windows look and feel
+}
+Note: MacLookAndFeel and WinLookAndFeel are separate interface to mark respective look and feel implementation.
+
+2) Factories for creating objects
+a) Interface for client –
+interface ToolkitFactory {
+TextView getTextView();
+Button getButton();
+}
+b) Concrete factories for variants –
+class MacToolkitFactory implements ToolkitFactory {
+TextView getTextView() { return new MacTextView(); }
+Button getButton() { return new MacButton(); }
+}
+class WinToolkitFactory implements ToolkitFactory {
+TextView getTextView() { return new WinTextView(); }
+Button getButton() { return new WinButton(); }
+}
+
+Note: Here both toolkit factories return interface type(TextView, Button) not concrete type (MacTextView or WinButton). Why? Because client code does not have to know that and it makes architecture extensible, loose coupled and maintainable.
+Remember? You should code for interface not for concrete.
+
+Well well well… all looks good but how to use it? and what will be in client code?
+Hmm, thats interesting..have a look at renderer class whose job to create controls and render it for screen/page/fragment etc..
+
+class ScreenRenderer {
+private final ToolkitFactory toolkitFactory;
+public ScreenRenderer(final ToolkitFactory factory) {
+toolkitFactory = factory; //??? why? Because your ScreenRenderer does not //have to know what kind of toolkit factory is, it just have to render the controls, //and it makes ScreenRenderer extensible, flexible, loose coupled and last not //least, closed for modification… Remember ? DI – Dependency Inversion
+}
+void renderControls() {
+final TextView tvName = toolkitFactory.getTextView();
+final Button buttonSubmit = toolkitFactory.getButton();
+….
+}
+}
+
+well, it’s still have some more code, 🙂 your main application which creates ScreenRenderer
+
+public static void main(…) {
+final ScreenRenderer macRenderer = new ScreenRenderer(new MacToolkitFactory());
+macRenderer.renderControls();
+final ScreenRenderer winRenderer = new ScreenRenderer(new WinToolkitFactory());
+winRenderer.renderControls();
+}
+
+See, Only your main caller knows about variant, Mac or Win. ScreenRenderer, Factories and other classes are independent, scalable and less prone to modifications.
+
+Suppose someday in future, someone wants to have Linux look and feel controls. so what code u have to change? Only main()… how?
+
+Interesting isn’t it?
+
+You have to add these classes,
+class LinuxTextView implements TextView, LinuxLookAndFeel {
+… implements setText() and linux look and feel
+}
+class LinuxButton implements Button, LinuxLookAndFeel {
+… implements setText() and linux look and feel
+}
+and factory
+class LinuxToolkitFactory implements ToolkitFactory {
+TextView getTextView() { return new LinuxTextView(); }
+Button getButton() { return new LinuxButton(); }
+}
+and main() code needs to change (or use the change)
+public static void main(…) {
+….
+final ScreenRenderer linuxRenderer = new ScreenRenderer(new LinuxToolkitFactory());
+linuxRenderer.renderControls();
+}
+
+“So your all client code is independent and closed for modification (ScreenRenderer and so on, whichever are using the controls)”
+
+
+– Credit – I love Design pattern book by Grady Booch but Chair examples taken from https://refactoring.guru its simply explained there.
